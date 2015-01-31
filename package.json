@@ -1,0 +1,18 @@
+{
+  "name": "date-today",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "browserify -r ./src/index.js:date-today -t 6to5ify --outfile test/index.js --debug",
+    "js": "6to5 src/index.js --modules common --out-file dist/index.js"
+  },
+  "author": "Brian LeRoux",
+  "license": "Apache2",
+  "dependencies": {
+    "6to5": "^3.2.0",
+    "6to5ify": "^4.0.0",
+    "browserify": "^8.1.1",
+    "webcomponents.js": "^0.5.4-1"
+  }
+}
