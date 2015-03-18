@@ -6,14 +6,18 @@ var _prototypeProperties = function (child, staticProps, instanceProps) { if (st
 
 var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
 
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
 // import the polyfill from node_modules
-var CustomElements = _interopRequire(require("webcomponents.js/CustomElements"));
+var CustomElements = _interopRequire(require("webcomponents.js"));
 
 // define the class
 var DateSpan = (function (HTMLSpanElement) {
   function DateSpan() {
-    if (Object.getPrototypeOf(DateSpan) !== null) {
-      Object.getPrototypeOf(DateSpan).apply(this, arguments);
+    _classCallCheck(this, DateSpan);
+
+    if (HTMLSpanElement != null) {
+      HTMLSpanElement.apply(this, arguments);
     }
   }
 
