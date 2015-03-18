@@ -33,8 +33,8 @@
   // module.exports (if we're in a module) or a new, empty object.
   runtime = global.regeneratorRuntime = inModule ? module.exports : {};
 
-  function wrap(innerFn, outerFn, self, tryList) {
-    return new Generator(innerFn, outerFn, self || null, tryList || []);
+  function wrap(innerFn, outerFn, self, tryLocsList) {
+    return new Generator(innerFn, outerFn, self || null, tryLocsList || []);
   }
   runtime.wrap = wrap;
 
@@ -93,9 +93,9 @@
     return genFun;
   };
 
-  runtime.async = function(innerFn, outerFn, self, tryList) {
+  runtime.async = function(innerFn, outerFn, self, tryLocsList) {
     return new Promise(function(resolve, reject) {
-      var generator = wrap(innerFn, outerFn, self, tryList);
+      var generator = wrap(innerFn, outerFn, self, tryLocsList);
       var callNext = step.bind(generator.next);
       var callThrow = step.bind(generator["throw"]);
 
@@ -118,9 +118,9 @@
     });
   };
 
-  function Generator(innerFn, outerFn, self, tryList) {
+  function Generator(innerFn, outerFn, self, tryLocsList) {
     var generator = outerFn ? Object.create(outerFn.prototype) : this;
-    var context = new Context(tryList);
+    var context = new Context(tryLocsList);
     var state = GenStateSuspendedStart;
 
     function invoke(method, arg) {
@@ -256,33 +256,34 @@
     return "[object Generator]";
   };
 
-  function pushTryEntry(triple) {
-    var entry = { tryLoc: triple[0] };
+  function pushTryEntry(locs) {
+    var entry = { tryLoc: locs[0] };
 
-    if (1 in triple) {
-      entry.catchLoc = triple[1];
+    if (1 in locs) {
+      entry.catchLoc = locs[1];
     }
 
-    if (2 in triple) {
-      entry.finallyLoc = triple[2];
+    if (2 in locs) {
+      entry.finallyLoc = locs[2];
+      entry.afterLoc = locs[3];
     }
 
     this.tryEntries.push(entry);
   }
 
-  function resetTryEntry(entry, i) {
+  function resetTryEntry(entry) {
     var record = entry.completion || {};
-    record.type = i === 0 ? "normal" : "return";
+    record.type = "normal";
     delete record.arg;
     entry.completion = record;
   }
 
-  function Context(tryList) {
+  function Context(tryLocsList) {
     // The root entry object (effectively a try statement without a catch
     // or a finally block) gives us a place to store values thrown from
     // locations where there is no enclosing try statement.
     this.tryEntries = [{ tryLoc: "root" }];
-    tryList.forEach(pushTryEntry, this);
+    tryLocsList.forEach(pushTryEntry, this);
     this.reset();
   }
 
@@ -466,7 +467,7 @@
       return ContinueSentinel;
     },
 
-    complete: function(record) {
+    complete: function(record, afterLoc) {
       if (record.type === "throw") {
         throw record.arg;
       }
@@ -477,6 +478,8 @@
       } else if (record.type === "return") {
         this.rval = record.arg;
         this.next = "end";
+      } else if (record.type === "normal" && afterLoc) {
+        this.next = afterLoc;
       }
 
       return ContinueSentinel;
@@ -484,7 +487,7 @@
 
     finish: function(finallyLoc) {
       var entry = this._findFinallyEntry(finallyLoc);
-      return this.complete(entry.completion);
+      return this.complete(entry.completion, entry.afterLoc);
     },
 
     "catch": function(tryLoc) {
@@ -494,7 +497,7 @@
           var record = entry.completion;
           if (record.type === "throw") {
             var thrown = record.arg;
-            resetTryEntry(entry, i);
+            resetTryEntry(entry);
           }
           return thrown;
         }

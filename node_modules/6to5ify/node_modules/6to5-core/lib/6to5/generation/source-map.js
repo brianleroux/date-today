@@ -48,8 +48,6 @@ SourceMap.prototype.mark = function (node, type) {
 
   var original = loc[type];
 
-  if (generated.line === original.line && generated.column === original.column) return; // nothing to map
-
   map.addMapping({
     source: this.opts.sourceFileName,
     generated: generated,

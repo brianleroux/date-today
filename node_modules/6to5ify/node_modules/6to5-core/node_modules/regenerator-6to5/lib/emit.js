@@ -318,7 +318,7 @@ function isSwitchCaseEnder(stmt) {
       || n.ThrowStatement.check(stmt);
 }
 
-Ep.getTryEntryList = function() {
+Ep.getTryLocsList = function() {
   if (this.tryEntries.length === 0) {
     // To avoid adding a needless [] to the majority of runtime.wrap
     // argument lists, force the caller to handle this case specially.
@@ -336,17 +336,18 @@ Ep.getTryEntryList = function() {
       var ce = tryEntry.catchEntry;
       var fe = tryEntry.finallyEntry;
 
-      var triple = [
+      var locs = [
         tryEntry.firstLoc,
         // The null here makes a hole in the array.
         ce ? ce.firstLoc : null
       ];
 
       if (fe) {
-        triple[2] = fe.firstLoc;
+        locs[2] = fe.firstLoc;
+        locs[3] = fe.afterLoc;
       }
 
-      return b.arrayExpression(triple);
+      return b.arrayExpression(locs);
     })
   );
 };
@@ -723,7 +724,8 @@ Ep.explodeStatement = function(path, labelId) {
     );
 
     var finallyLoc = stmt.finalizer && loc();
-    var finallyEntry = finallyLoc && new leap.FinallyEntry(finallyLoc);
+    var finallyEntry = finallyLoc &&
+      new leap.FinallyEntry(finallyLoc, after);
 
     var tryEntry = new leap.TryEntry(
       self.getUnmarkedCurrentLoc(),
@@ -796,10 +798,10 @@ Ep.explodeStatement = function(path, labelId) {
           self.explodeStatement(path.get("finalizer"));
         });
 
-        self.emit(b.callExpression(
+        self.emit(b.returnStatement(b.callExpression(
           self.contextProperty("finish"),
           [finallyEntry.firstLoc]
-        ));
+        )));
       }
     });
 
